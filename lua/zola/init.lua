@@ -361,4 +361,69 @@ function M.create_page(opts)
     end
 end
 
+-- User commands config
+--- Parse CLI-like args string into a table with booleans.
+---@param args string
+---@return table
+local function parse_args(args)
+    local opts = {}
+    for k, v in string.gmatch(args, '(%w+)=([^%s]+)') do
+        if v == 'true' then
+            opts[k] = true
+        elseif v == 'false' then
+            opts[k] = false
+        else
+            opts[k] = v
+        end
+    end
+    return opts
+end
+
+--- Dispatch Zola subcommands with config merging.
+---@param subcommand string
+---@param args string
+local function zola_dispatch(subcommand, args)
+    local opts = parse_args(args)
+
+    if subcommand == 'serve' then
+        local serve_config = vim.tbl_deep_extend('force', {}, M.config.serve, opts)
+        M.serve(serve_config.root, serve_config.output_dir, serve_config.port, serve_config.extra_watch_path)
+    elseif subcommand == 'build' then
+        local build_config = vim.tbl_deep_extend('force', {}, M.config.build, opts)
+        M.build(build_config.root, build_config.output_dir)
+    elseif subcommand == 'check' then
+        local check_config = vim.tbl_deep_extend('force', {}, M.config.check, opts)
+        M.check(check_config.root)
+    elseif subcommand == 'create_section' then
+        M.create_section(opts)
+    elseif subcommand == 'create_page' then
+        M.create_page(opts)
+    else
+        vim.notify('Unknown zola subcommand: ' .. subcommand, vim.log.levels.ERROR)
+    end
+end
+
+vim.api.nvim_create_user_command('Zola', function(cmd)
+    local args = vim.split(cmd.args, '%s+', { trimempty = true })
+    local subcommand = table.remove(args, 1)
+    if not subcommand then
+        vim.notify('Please provide a subcommand to :Zola', vim.log.levels.ERROR)
+        return
+    end
+    zola_dispatch(subcommand, table.concat(args, ' '))
+end, {
+    nargs = '+',
+    complete = function(_, line)
+        local completions = { 'serve', 'build', 'check', 'create_section', 'create_page' }
+        local split = vim.split(line, '%s+', { trimempty = true })
+        if #split == 2 then
+            return vim.tbl_filter(function(cmd)
+                return vim.startswith(cmd, split[2])
+            end, completions)
+        end
+        return {}
+    end,
+    desc = 'Run Zola commands with :Zola subcommand key=value ...',
+})
+
 return M
