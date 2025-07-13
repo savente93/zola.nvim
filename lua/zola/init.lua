@@ -1,33 +1,21 @@
-print 'loading zola.nvim'
-
 local M = {}
 
 M.config = {
-    common = {
-        config_file_path = nil,
-        root = nil,
-    },
 
     build = {
-        base_url = nil,
-        output_dir = nil,
         force = false,
         minify = true,
         incl_drafts = false,
     },
+
     serve = {
-        interface = nil,
-        port = nil,
-        output_dir = nil,
         force = false,
-        base_url = nil,
         incl_drafts = false,
         open = false,
-        store_html = nil,
         fast = false,
         no_port_append = false,
-        extra_watch_path = nil,
     },
+
     check = {
         incl_drafts = false,
         skip_external_links = false,
