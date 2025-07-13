@@ -1,3 +1,4 @@
+local Path = require 'plenary.path'
 local M = {}
 
 M.config = {
@@ -22,17 +23,55 @@ M.config = {
     },
 }
 
+function M._discover_config_file(root)
+    local project_root = root or vim.fn.getcwd()
+    project_root = Path:new(project_root)
+    if project_root:join('config.toml').exists() then
+        return project_root
+    else
+        return nil
+    end
+end
+
+function M._discover_content_folder(root)
+    local project_root = root or vim.fn.getcwd()
+    project_root = Path:new(project_root)
+    if project_root:join('content').exists() then
+        return project_root
+    else
+        return nil
+    end
+end
+
+function M._is_zola_site(root)
+    return M._discover_config_file(root) ~= nil and M._discover_content_folder(root) ~= nil
+end
+
 function M.setup() end
 
-function M.build(root)
-    if not M.config.zola_path then
-        vim.notify('Zola binary not configured.', vim.log.levels.ERROR)
-        return
+function M.build(root, output_dir)
+    local cmd = { 'zola', 'build' }
+    if root then
+        table.insert(cmd, '--root')
+        table.insert(cmd, root)
     end
 
-    local cmd = M.config.zola_path .. ' build'
-    if root then
-        cmd = cmd .. '--root ' .. root
+    local build_config = M.config.build
+
+    if build_config.force then
+        table.insert(cmd, '--force')
+    end
+
+    if build_config.minify then
+        table.insert(cmd, '--minify')
+    end
+    if build_config.incl_drafts then
+        table.insert(cmd, '--drafts')
+    end
+
+    if output_dir then
+        table.insert(cmd, '--output_dir')
+        table.insert(cmd, output_dir)
     end
 
     vim.fn.jobstart(cmd, {
@@ -58,7 +97,7 @@ function M.build(root)
     })
 end
 
--- M.setup()
--- M.build("/home/sam/projects/writng/slowcoder.org/")
+function M.serve(root) end
+function M.check(root) end
 
 return M
