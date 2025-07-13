@@ -274,11 +274,9 @@ local function render_front_matter(draft)
     front_matter = front_matter .. '+++\n'
 
     return front_matter
-
 end
 
 local function write_to_file(path, content)
-
     local uv = vim.uv
     local fd, err = uv.fs_open(path, 'w', 420)
 
@@ -297,9 +295,29 @@ local function write_to_file(path, content)
 
     -- Close the file
     uv.fs_close(fd)
-
 end
 
+local function put_cursor_at_title()
+    -- put the curos inbetween the quotes on the title = "" line
+    local buf = vim.api.nvim_get_current_buf()
+    local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+
+    for i, line in ipairs(lines) do
+        local start_col, _ = line:find 'title%s*=%s*""'
+        if start_col then
+            -- 2. Place the cursor between the quotes (i.e., after the = and space and opening quote)
+            -- Line numbers are 0-indexed, columns are 0-indexed too
+            local target_col = line:find '""' -- position of first quote
+            if target_col then
+                -- Move to between the quotes
+                vim.api.nvim_win_set_cursor(0, { i, target_col })
+                -- also put us in insert mode so we can add the title immediately
+                vim.api.nvim_feedkeys('i', 'n', false)
+            end
+            break
+        end
+    end
+end
 
 function M.create_section(opts)
     local path = opts.path
@@ -343,26 +361,7 @@ function M.create_section(opts)
 
     if open then
         vim.cmd('e ' .. final_path)
-
-        -- put the curos inbetween the quotes on the title = "" line
-        local buf = vim.api.nvim_get_current_buf()
-        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-
-        for i, line in ipairs(lines) do
-            local start_col, _ = line:find 'title%s*=%s*""'
-            if start_col then
-                -- 2. Place the cursor between the quotes (i.e., after the = and space and opening quote)
-                -- Line numbers are 0-indexed, columns are 0-indexed too
-                local target_col = line:find '""' -- position of first quote
-                if target_col then
-                    -- Move to between the quotes
-                    vim.api.nvim_win_set_cursor(0, { i, target_col })
-                    -- also put us in insert mode so we can add the title immediately
-                    vim.api.nvim_feedkeys('i', 'n', false)
-                end
-                break
-            end
-        end
+        put_cursor_at_title()
     end
 end
 
@@ -375,69 +374,68 @@ function M.create_page(opts)
     local draft = opts.draft ~= false
 
     if path == nil then
-        vim.notify('Path not specified', ERROR)
+        vim.notify('Path not specified', vim.log.levels.ERROR)
         return
     end
 
     local content_folder = M._discover_content_folder(root)
+
     if content_folder == nil then
-        vim.notify('Could not determine content folder. is your cwd set correctly?', ERROR)
+        vim.notify('Could not determine content folder. Is your cwd set correctly?', vim.log.levels.ERROR)
         return
     end
 
+    -- Ensure we expand content_folder correctly before joining
+    local content_path = Path:new(Path:new(content_folder):expand())
+
+    -- not completely valid yet, as it can stil lbe either a dir or a file
+    local page_path = content_path:joinpath(path)
+
     local uv = vim.uv
-    local full_section_path = Path:new(content_folder):joinpath(path):expand()
-
     if page_is_dir then
-    else
-        if not full_section_path:match '.md$' then
-            full_section_path = full_section_path .. '.md'
-        end
-
-        full_section_path = Path:new(full_section_path)
-
-        if full_section_path:exists() then
+        -- curretnly page_path points to the dir
+        if page_path:exists() then
             if not force then
-                vim.notify('page file already exists! exiting.', ERROR)
+                vim.notify('page dir already exists! exiting.', ERROR)
                 return
             else
-                uv.fs_unlink(full_section_path:absolute())
+                uv.fs_unlink(page_path:absolute())
             end
+        end
+        uv.fs_mkdir(page_path:absolute(), 493)
+
+        page_path = page_path:joinpath 'index.md'
+    else
+        if not page_path.filename:match '.md$' then
+            page_path = page_path .. '.md'
+        end
+
+        page_path = Path:new(page_path)
+    end
+
+    vim.notify(page_path.filename, vim.log.levels.WARN)
+    if page_path:exists() then
+        if not force then
+            vim.notify('page dir already exists! exiting.', ERROR)
+            return
+        else
+            uv.fs_unlink(page_path:absolute())
         end
     end
 
-    uv.fs_mkdir(full_section_path:absolute(), 493)
+    local front_matter = render_front_matter(draft)
+    write_to_file(page_path.filename, front_matter)
 
-    local final_path = create_section_index_md { dir = full_section_path, draft = draft }
     if open then
-        vim.cmd('e ' .. final_path)
+        vim.cmd('e ' .. page_path.filename)
 
-        -- put the curos inbetween the quotes on the title = "" line
-        local buf = vim.api.nvim_get_current_buf()
-        local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
-
-        for i, line in ipairs(lines) do
-            local start_col, _ = line:find 'title%s*=%s*""'
-            if start_col then
-                -- 2. Place the cursor between the quotes (i.e., after the = and space and opening quote)
-                -- Line numbers are 0-indexed, columns are 0-indexed too
-                local target_col = line:find '""' -- position of first quote
-                if target_col then
-                    -- Move to between the quotes
-                    vim.api.nvim_win_set_cursor(0, { i, target_col })
-                    -- also put us in insert mode so we can add the title immediately
-                    vim.api.nvim_feedkeys('i', 'n', false)
-                end
-                break
-            end
-        end
-    end
+        put_cursor_at_title()
     end
 end
 
 M.create_page {
     path = 'test_page',
-    page_is_dir = false,
+    page_is_dir = true,
     root = '~/projects/writing/slowcoder.org/',
     draft = true,
     open = true,
