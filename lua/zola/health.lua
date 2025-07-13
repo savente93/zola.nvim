@@ -1,4 +1,3 @@
-local Path = require 'plenary.path'
 local ok = vim.health.ok
 local error = vim.health.error
 local warn = vim.health.warn
