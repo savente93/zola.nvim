@@ -7,15 +7,21 @@ local INFO = vim.log.levels.INFO
 ---@class zola_plugin
 local M = {}
 
--- Utility: strip trailing slashes safely
+--- Strip trailing slashes from a path safely.
+---@param path string
+---@return string
 local function strip_trailing_slash(path)
     if path == '/' then
         return path
     end
-    return path:gsub('/*$', '')
+    local stripped = path:gsub('/*$', '')
+    return stripped
 end
 
--- Utility: run a job with error checking
+--- Run an asynchronous job with error checking.
+---@param cmd string[]
+---@param opts table
+---@return integer job_id
 local function run_job(cmd, opts)
     local job_id = vim.fn.jobstart(cmd, opts)
     if job_id <= 0 then
@@ -24,33 +30,47 @@ local function run_job(cmd, opts)
     return job_id
 end
 
--- Default config
+--- Plugin configuration defaults.
 M.config = {
     build = { force = false, minify = true, incl_drafts = false },
     serve = { force = false, incl_drafts = false, open = false, fast = false, no_port_append = false },
     check = { incl_drafts = false, skip_external_links = false },
 }
 
+--- Setup user configuration, merging with defaults.
+---@param user_config table|nil
 function M.setup(user_config)
     M.config = vim.tbl_deep_extend('force', M.config, user_config or {})
 end
 
+--- Discover Zola config.toml in project root.
+---@param root string|nil
+---@return Path|nil
 function M._discover_config_file(root)
     local project_root = strip_trailing_slash(root or vim.fn.getcwd())
     local config_path = Path:new(project_root):joinpath 'config.toml'
     return config_path:exists() and config_path or nil
 end
 
+--- Discover Zola content folder in project root.
+---@param root string|nil
+---@return Path|nil
 function M._discover_content_folder(root)
     local project_root = strip_trailing_slash(root or vim.fn.getcwd())
     local content_path = Path:new(project_root):joinpath 'content'
     return content_path:exists() and content_path or nil
 end
 
+--- Determine if a folder is a Zola site.
+---@param root string|nil
+---@return boolean
 function M._is_zola_site(root)
-    return M._discover_config_file(root) and M._discover_content_folder(root)
+    return M._discover_config_file(root) ~= nil and M._discover_content_folder(root) ~= nil
 end
 
+--- Build the Zola site.
+---@param root string|nil
+---@param output_dir string|nil
 function M.build(root, output_dir)
     local cmd = { 'zola', 'build' }
     local build_config = M.config.build
@@ -98,6 +118,8 @@ function M.build(root, output_dir)
     })
 end
 
+--- Check the Zola site for errors and warnings.
+---@param root string|nil
 function M.check(root)
     local cmd = { 'zola', 'check' }
     local check = M.config.check
@@ -131,14 +153,19 @@ function M.check(root)
         end,
         on_exit = function(_, code)
             if code == 0 then
-                vim.notify('[zola_plugin] Check succesfull', INFO)
+                vim.notify('[zola_plugin] Check successful', INFO)
             else
-                vim.notify('[zola_plugin] Check failed with code' .. code, ERROR)
+                vim.notify('[zola_plugin] Check failed with code ' .. code, ERROR)
             end
         end,
     })
 end
 
+--- Serve the Zola site locally with live reload.
+---@param root string|nil
+---@param output_dir string|nil
+---@param port integer|nil
+---@param extra_watch_path string|nil
 function M.serve(root, output_dir, port, extra_watch_path)
     local cmd = { 'zola', 'serve' }
     local serve_config = M.config.serve
@@ -149,19 +176,16 @@ function M.serve(root, output_dir, port, extra_watch_path)
     if serve_config.force then
         table.insert(cmd, '--force')
     end
-
     if serve_config.no_port_append then
         table.insert(cmd, '--no-port-append')
     end
-
     if port then
         if serve_config.no_port_append then
-            vim.notify('Port was specified, but so was --no-port-append. Ignoring port', vim.log.levels.WARN)
+            vim.notify('Port was specified, but so was --no-port-append. Ignoring port', WARN)
         else
             vim.list_extend(cmd, { '--port', port })
         end
     end
-
     if serve_config.open then
         table.insert(cmd, '--open')
     end
@@ -188,6 +212,8 @@ function M.serve(root, output_dir, port, extra_watch_path)
     local win = vim.api.nvim_get_current_win()
     vim.api.nvim_win_set_buf(win, buf)
 
+    --- Append lines to the serve output buffer.
+    ---@param lines string[]
     local function append_lines(lines)
         if vim.api.nvim_buf_is_valid(buf) then
             vim.bo[buf].modifiable = true
@@ -213,7 +239,7 @@ function M.serve(root, output_dir, port, extra_watch_path)
             if code == 0 then
                 vim.notify('[zola_plugin] Serve exited successfully!', INFO)
             else
-                vim.notify('[zola_plugin] Serve exited unsuccessfully with code ' .. code, ERROR)
+                vim.notify('[zola_plugin] Serve exited with code ' .. code, ERROR)
             end
         end,
     })
@@ -221,6 +247,9 @@ function M.serve(root, output_dir, port, extra_watch_path)
     vim.notify('Started zola serve', INFO)
 end
 
+--- Render default TOML front matter for new content.
+---@param draft boolean|nil
+---@return string
 local function render_front_matter(draft)
     local date = os.date '%Y-%m-%d'
     return table.concat({
@@ -233,8 +262,11 @@ local function render_front_matter(draft)
     }, '\n')
 end
 
+--- Write content to file at given path.
+---@param path string
+---@param content string
 local function write_to_file(path, content)
-    local fd, err = uv.fs_open(path, 'w', 420) -- permisson 0644 in decimal
+    local fd, err = uv.fs_open(path, 'w', 420) -- permission 0644
     if not fd then
         return vim.notify('Failed to open file: ' .. err, ERROR)
     end
@@ -246,6 +278,7 @@ local function write_to_file(path, content)
     end
 end
 
+--- Put cursor inside empty title quotes in front matter.
 local function put_cursor_at_title()
     local buf = vim.api.nvim_get_current_buf()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
@@ -262,6 +295,8 @@ local function put_cursor_at_title()
     end
 end
 
+--- Create a new section with _index.md in the content folder.
+---@param opts { path: string, root?: string, force?: boolean, draft?: boolean, open?: boolean }
 function M.create_section(opts)
     vim.validate { path = { opts.path, 'string' } }
 
@@ -276,9 +311,9 @@ function M.create_section(opts)
     end
 
     if opts.force and section_path:exists() then
-        section_path:rm { recursive = true }
+        uv.fs_rmdir(section_path:absolute())
     end
-    uv.fs_mkdir(section_path:absolute(), 493) -- permission 0755  in decimal
+    uv.fs_mkdir(section_path:absolute(), 493) -- permission 0755
 
     local final_path = section_path:joinpath '_index.md'
     write_to_file(final_path:absolute(), render_front_matter(opts.draft ~= false))
@@ -289,6 +324,8 @@ function M.create_section(opts)
     end
 end
 
+--- Create a new page in the content folder.
+---@param opts { path: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?: boolean }
 function M.create_page(opts)
     vim.validate { path = { opts.path, 'string' } }
 
@@ -310,6 +347,7 @@ function M.create_page(opts)
         uv.fs_mkdir(page_path:absolute(), 493)
         final_path = page_path:joinpath 'index.md'
     else
+        -- Note: Path.filename returns the full path string in plenary
         if not page_path.filename:match '.md$' then
             final_path = Path:new(page_path.filename .. '.md')
         end
