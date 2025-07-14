@@ -72,12 +72,13 @@ end
 ---@param root string|nil
 ---@param output_dir string|nil
 function M.build(root, output_dir)
-    local cmd = { 'zola', 'build' }
+    local cmd = { 'zola' }
     local build_config = M.config.build
 
     if root then
         vim.list_extend(cmd, { '--root', root })
     end
+    table.insert(cmd, 'build')
     if build_config.force then
         table.insert(cmd, '--force')
     end
@@ -121,12 +122,14 @@ end
 --- Check the Zola site for errors and warnings.
 ---@param root string|nil
 function M.check(root)
-    local cmd = { 'zola', 'check' }
+    local cmd = { 'zola' }
     local check = M.config.check
 
     if root then
         vim.list_extend(cmd, { '--root', root })
     end
+
+    table.insert(cmd, 'check')
     if check.skip_external_links then
         table.insert(cmd, '--skip-external-links')
     end
@@ -167,24 +170,25 @@ end
 ---@param port integer|nil
 ---@param extra_watch_path string|nil
 function M.serve(root, output_dir, port, extra_watch_path)
-    local cmd = { 'zola', 'serve' }
+    local cmd = { 'zola' }
     local serve_config = M.config.serve
 
     if root then
         vim.list_extend(cmd, { '--root', root })
     end
+
+    table.insert(cmd, 'serve')
+
     if serve_config.force then
         table.insert(cmd, '--force')
     end
     if serve_config.no_port_append then
         table.insert(cmd, '--no-port-append')
     end
-    if port then
-        if serve_config.no_port_append then
-            vim.notify('Port was specified, but so was --no-port-append. Ignoring port', WARN)
-        else
-            vim.list_extend(cmd, { '--port', port })
-        end
+    if port and not serve_config.no_port_append then
+        vim.list_extend(cmd, { '--port', port })
+    elseif port then
+        vim.notify('Port was specified, but so was --no-port-append. Ignoring port', WARN)
     end
     if serve_config.open then
         table.insert(cmd, '--open')
@@ -202,39 +206,14 @@ function M.serve(root, output_dir, port, extra_watch_path)
         vim.list_extend(cmd, { '--extra-watch-path', extra_watch_path })
     end
 
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.bo[buf].modifiable = false
-    vim.bo[buf].bufhidden = 'wipe'
-    vim.bo[buf].buftype = 'nofile'
-    vim.bo[buf].filetype = 'zola-log'
-
     vim.cmd 'vsplit'
-    local win = vim.api.nvim_get_current_win()
-    vim.api.nvim_win_set_buf(win, buf)
+    local buf = vim.api.nvim_create_buf(false, true)
+    vim.api.nvim_win_set_buf(0, buf)
 
-    --- Append lines to the serve output buffer.
-    ---@param lines string[]
-    local function append_lines(lines)
-        if vim.api.nvim_buf_is_valid(buf) then
-            vim.bo[buf].modifiable = true
-            vim.api.nvim_buf_set_lines(buf, -1, -1, false, lines)
-            vim.bo[buf].modifiable = false
-        end
-    end
-
+    -- Start terminal job directly
     run_job(cmd, {
         stdout_buffered = false,
         stderr_buffered = false,
-        on_stdout = function(_, data)
-            vim.schedule(function()
-                append_lines(data)
-            end)
-        end,
-        on_stderr = function(_, data)
-            vim.schedule(function()
-                append_lines(data)
-            end)
-        end,
         on_exit = function(_, code)
             if code == 0 then
                 vim.notify('[zola_plugin] Serve exited successfully!', INFO)
@@ -242,7 +221,11 @@ function M.serve(root, output_dir, port, extra_watch_path)
                 vim.notify('[zola_plugin] Serve exited with code ' .. code, ERROR)
             end
         end,
+        term = true,
     })
+
+    vim.bo[buf].bufhidden = 'wipe'
+    vim.bo[buf].filetype = 'zola-log'
 
     vim.notify('Started zola serve', INFO)
 end
@@ -361,69 +344,5 @@ function M.create_page(opts)
     end
 end
 
--- User commands config
---- Parse CLI-like args string into a table with booleans.
----@param args string
----@return table
-local function parse_args(args)
-    local opts = {}
-    for k, v in string.gmatch(args, '(%w+)=([^%s]+)') do
-        if v == 'true' then
-            opts[k] = true
-        elseif v == 'false' then
-            opts[k] = false
-        else
-            opts[k] = v
-        end
-    end
-    return opts
-end
-
---- Dispatch Zola subcommands with config merging.
----@param subcommand string
----@param args string
-local function zola_dispatch(subcommand, args)
-    local opts = parse_args(args)
-
-    if subcommand == 'serve' then
-        local serve_config = vim.tbl_deep_extend('force', {}, M.config.serve, opts)
-        M.serve(serve_config.root, serve_config.output_dir, serve_config.port, serve_config.extra_watch_path)
-    elseif subcommand == 'build' then
-        local build_config = vim.tbl_deep_extend('force', {}, M.config.build, opts)
-        M.build(build_config.root, build_config.output_dir)
-    elseif subcommand == 'check' then
-        local check_config = vim.tbl_deep_extend('force', {}, M.config.check, opts)
-        M.check(check_config.root)
-    elseif subcommand == 'create_section' then
-        M.create_section(opts)
-    elseif subcommand == 'create_page' then
-        M.create_page(opts)
-    else
-        vim.notify('Unknown zola subcommand: ' .. subcommand, vim.log.levels.ERROR)
-    end
-end
-
-vim.api.nvim_create_user_command('Zola', function(cmd)
-    local args = vim.split(cmd.args, '%s+', { trimempty = true })
-    local subcommand = table.remove(args, 1)
-    if not subcommand then
-        vim.notify('Please provide a subcommand to :Zola', vim.log.levels.ERROR)
-        return
-    end
-    zola_dispatch(subcommand, table.concat(args, ' '))
-end, {
-    nargs = '+',
-    complete = function(_, line)
-        local completions = { 'serve', 'build', 'check', 'create_section', 'create_page' }
-        local split = vim.split(line, '%s+', { trimempty = true })
-        if #split == 2 then
-            return vim.tbl_filter(function(cmd)
-                return vim.startswith(cmd, split[2])
-            end, completions)
-        end
-        return {}
-    end,
-    desc = 'Run Zola commands with :Zola subcommand key=value ...',
-})
-
+M.serve '/home/sam/projects/writing/slowcoder.org/'
 return M
