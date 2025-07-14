@@ -7,6 +7,26 @@ local INFO = vim.log.levels.INFO
 ---@class zola_plugin
 local M = {}
 
+--- Merge two tables with `t1` taking precedence over `t2`.
+---@param t1 table
+---@param t2 table
+---@return table
+local function merge_tables(t1, t2)
+    local result = {}
+
+    -- First copy all key-value pairs from t2
+    for k, v in pairs(t2) do
+        result[k] = v
+    end
+
+    -- Then overwrite with key-value pairs from t1
+    for k, v in pairs(t1) do
+        result[k] = v
+    end
+
+    return result
+end
+
 --- Strip trailing slashes from a path safely.
 ---@param path string
 ---@return string
@@ -32,9 +52,14 @@ end
 
 --- Plugin configuration defaults.
 M.config = {
-    build = { force = false, minify = true, incl_drafts = false },
-    serve = { force = false, incl_drafts = false, open = false, fast = false, no_port_append = false },
-    check = { incl_drafts = false, skip_external_links = false },
+    build = { force = false, minify = true, drafts = false },
+    serve = {
+        force = false,
+        drafts = false,
+        open = true,
+        fast = false,
+    },
+    check = { drafts = false, skip_external_links = false },
 }
 
 --- Setup user configuration, merging with defaults.
@@ -69,27 +94,29 @@ function M.is_zola_site(root)
 end
 
 --- Build the Zola site.
----@param root string|nil
----@param output_dir string|nil
-function M.build(root, output_dir)
+---@param opts { root?: string, force?: boolean, draft?: boolean, open?: boolean, output_dir?: string}
+function M.build(opts)
     local cmd = { 'zola' }
-    local build_config = M.config.build
+    local used_opts = merge_tables(opts, M.config.build)
 
-    if root then
-        vim.list_extend(cmd, { '--root', root })
+    if used_opts.root then
+        vim.list_extend(cmd, { '--root', used_opts.root })
     end
+
     table.insert(cmd, 'build')
-    if build_config.force then
+
+    if used_opts.force then
         table.insert(cmd, '--force')
     end
-    if build_config.minify then
+
+    if used_opts.minify then
         table.insert(cmd, '--minify')
     end
-    if build_config.incl_drafts then
+    if used_opts.drafts then
         table.insert(cmd, '--drafts')
     end
-    if output_dir then
-        vim.list_extend(cmd, { '--output_dir', output_dir })
+    if used_opts.output_dir then
+        vim.list_extend(cmd, { '--output_dir', used_opts.output_dir })
     end
 
     run_job(cmd, {
@@ -114,20 +141,21 @@ function M.build(root, output_dir)
 end
 
 --- Check the Zola site for errors and warnings.
----@param root string|nil
-function M.check(root)
+function M.check(opts)
     local cmd = { 'zola' }
     local check = M.config.check
 
-    if root then
-        vim.list_extend(cmd, { '--root', root })
+    local used_opts = merge_tables(opts, M.config.check)
+
+    if used_opts.root then
+        vim.list_extend(cmd, { '--root', used_opts.root })
     end
 
     table.insert(cmd, 'check')
     if check.skip_external_links then
         table.insert(cmd, '--skip-external-links')
     end
-    if check.incl_drafts then
+    if check.drafts then
         table.insert(cmd, '--drafts')
     end
 
@@ -154,31 +182,21 @@ function M.check(root)
 end
 
 --- Serve the Zola site locally with live reload.
----@param root string|nil
----@param output_dir string|nil
----@param port integer|nil
----@param extra_watch_path string|nil
-function M.serve(root, output_dir, port, extra_watch_path)
+---@param opts {root?: string, output_dir?: string, force?: boolean, drafts?: boolean, open?: boolean,  fast?: boolean }
+function M.serve(opts)
     local cmd = { 'zola' }
-    local serve_config = M.config.serve
+    local used_opts = merge_tables(opts, M.config.serve)
 
-    if root then
-        vim.list_extend(cmd, { '--root', root })
+    if used_opts.root then
+        vim.list_extend(cmd, { '--root', used_opts.root })
     end
 
     table.insert(cmd, 'serve')
 
-    if serve_config.force then
+    if used_opts.force then
         table.insert(cmd, '--force')
     end
-    if serve_config.no_port_append then
-        table.insert(cmd, '--no-port-append')
-    end
-    if port and not serve_config.no_port_append then
-        vim.list_extend(cmd, { '--port', port })
-    elseif port then
-        vim.notify('Port was specified, but so was --no-port-append. Ignoring port', WARN)
-    end
+
     if serve_config.open then
         table.insert(cmd, '--open')
     end
