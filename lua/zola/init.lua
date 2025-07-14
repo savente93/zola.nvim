@@ -95,25 +95,19 @@ function M.build(root, output_dir)
     run_job(cmd, {
         stdout_buffered = true,
         stderr_buffered = true,
-        on_stdout = function(_, data)
-            if data then
-                for _, line in ipairs(data) do
-                    vim.notify('[Zola stdout]: ' .. line, WARN)
-                end
-            end
-        end,
+
         on_stderr = function(_, data)
             if data then
                 for _, line in ipairs(data) do
-                    vim.notify('[Zola stderr]: ' .. line, WARN)
+                    vim.notify('[Zola]: ' .. line, ERROR)
                 end
             end
         end,
         on_exit = function(_, code)
             if code == 0 then
-                vim.notify('[zola_plugin] Site built successfully!', INFO)
+                vim.notify('[Zola] Site built successfully!', INFO)
             else
-                vim.notify('[zola_plugin] Build failed with code ' .. code, ERROR)
+                vim.notify('[Zola] Build failed with code ' .. code, ERROR)
             end
         end,
     })
@@ -140,25 +134,20 @@ function M.check(root)
     run_job(cmd, {
         stdout_buffered = true,
         stderr_buffered = true,
-        on_stdout = function(_, data)
-            if data then
-                for _, line in ipairs(data) do
-                    vim.notify('[Zola stdout]: ' .. line, WARN)
-                end
-            end
-        end,
+
         on_stderr = function(_, data)
             if data then
                 for _, line in ipairs(data) do
-                    vim.notify('[Zola stderr]: ' .. line, WARN)
+                    vim.notify(line, ERROR)
                 end
             end
         end,
+
         on_exit = function(_, code)
             if code == 0 then
-                vim.notify('[zola_plugin] Check successful', INFO)
+                vim.notify('[Zola] Check successful', INFO)
             else
-                vim.notify('[zola_plugin] Check failed with code ' .. code, ERROR)
+                vim.notify('[Zola] Check failed ', ERROR)
             end
         end,
     })
@@ -206,28 +195,20 @@ function M.serve(root, output_dir, port, extra_watch_path)
         vim.list_extend(cmd, { '--extra-watch-path', extra_watch_path })
     end
 
+    local serve_buf_nr = vim.api.nvim_create_buf(false, true)
+    vim.bo[serve_buf_nr].bufhidden = 'wipe'
+    vim.bo[serve_buf_nr].buftype = 'nofile'
+    vim.bo[serve_buf_nr].filetype = 'zola-log'
+
     vim.cmd 'vsplit'
-    local buf = vim.api.nvim_create_buf(false, true)
-    vim.api.nvim_win_set_buf(0, buf)
+    vim.api.nvim_win_set_buf(0, serve_buf_nr)
 
     -- Start terminal job directly
     run_job(cmd, {
         stdout_buffered = false,
         stderr_buffered = false,
-        on_exit = function(_, code)
-            if code == 0 then
-                vim.notify('[zola_plugin] Serve exited successfully!', INFO)
-            else
-                vim.notify('[zola_plugin] Serve exited with code ' .. code, ERROR)
-            end
-        end,
         term = true,
     })
-
-    vim.bo[buf].bufhidden = 'wipe'
-    vim.bo[buf].filetype = 'zola-log'
-
-    vim.notify('Started zola serve', INFO)
 end
 
 --- Render default TOML front matter for new content.
@@ -344,5 +325,4 @@ function M.create_page(opts)
     end
 end
 
-M.serve '/home/sam/projects/writing/slowcoder.org/'
 return M
