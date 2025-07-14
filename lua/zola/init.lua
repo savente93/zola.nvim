@@ -141,6 +141,7 @@ function M.build(opts)
 end
 
 --- Check the Zola site for errors and warnings.
+---@param opts {root?: string, drafts?: boolean, skip_external_links?: boolean}
 function M.check(opts)
     local cmd = { 'zola' }
     local check = M.config.check
@@ -197,20 +198,17 @@ function M.serve(opts)
         table.insert(cmd, '--force')
     end
 
-    if serve_config.open then
+    if used_opts.open then
         table.insert(cmd, '--open')
     end
-    if serve_config.fast then
+    if used_opts.fast then
         table.insert(cmd, '--fast')
     end
-    if serve_config.incl_drafts then
+    if used_opts.incl_drafts then
         table.insert(cmd, '--drafts')
     end
-    if output_dir then
-        vim.list_extend(cmd, { '--output_dir', output_dir })
-    end
-    if extra_watch_path then
-        vim.list_extend(cmd, { '--extra-watch-path', extra_watch_path })
+    if used_opts.output_dir then
+        vim.list_extend(cmd, { '--output_dir', used_opts.output_dir })
     end
 
     local serve_buf_nr = vim.api.nvim_create_buf(false, true)
@@ -278,49 +276,53 @@ local function put_cursor_at_title()
 end
 
 --- Create a new section with _index.md in the content folder.
----@param opts { path: string, root?: string, force?: boolean, draft?: boolean, open?: boolean }
+---@param opts { slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean }
 function M.create_section(opts)
-    vim.validate { path = { opts.path, 'string' } }
+    vim.validate { path = { opts.slug, 'string' } }
 
-    local content_folder = M._discover_content_folder(opts.root)
+    local used_opts = merge_tables(opts, M.config.section_defaults)
+
+    local content_folder = M._discover_content_folder(used_opts.root)
     if not content_folder then
         return vim.notify('Could not determine content folder.', ERROR)
     end
 
-    local section_path = Path:new(content_folder):joinpath(opts.path)
-    if section_path:exists() and not opts.force then
+    local section_path = Path:new(content_folder):joinpath(used_opts.slug)
+    if section_path:exists() and not used_opts.force then
         return vim.notify('Section already exists!', ERROR)
     end
 
-    if opts.force and section_path:exists() then
+    if used_opts.force and section_path:exists() then
         uv.fs_rmdir(section_path:absolute())
     end
     uv.fs_mkdir(section_path:absolute(), 493) -- permission 0755
 
     local final_path = section_path:joinpath '_index.md'
-    write_to_file(final_path:absolute(), render_front_matter(opts.draft ~= false))
+    write_to_file(final_path:absolute(), render_front_matter(used_opts.draft))
 
-    if opts.open ~= false then
+    if used_opts.open then
         vim.cmd('e ' .. final_path:absolute())
         put_cursor_at_title()
     end
 end
 
 --- Create a new page in the content folder.
----@param opts { path: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?: boolean }
+---@param opts { slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?: boolean }
 function M.create_page(opts)
-    vim.validate { path = { opts.path, 'string' } }
+    vim.validate { slug = { opts.slug, 'string' } }
 
-    local content_folder = M._discover_content_folder(opts.root)
+    local used_opts = merge_tables(opts, M.config.page_defaults)
+
+    local content_folder = M._discover_content_folder(used_opts.root)
     if not content_folder then
         return vim.notify('Could not determine content folder.', ERROR)
     end
 
-    local page_path = Path:new(content_folder):joinpath(opts.path)
+    local page_path = Path:new(content_folder):joinpath(used_opts.slug)
     local final_path = page_path
 
-    if opts.page_is_dir ~= false then
-        if page_path:exists() and not opts.force then
+    if used_opts.page_is_dir then
+        if page_path:exists() and not used_opts.force then
             return vim.notify('Page directory already exists!', ERROR)
         elseif page_path:exists() then
             uv.fs_unlink(page_path:absolute())
@@ -335,9 +337,9 @@ function M.create_page(opts)
         end
     end
 
-    write_to_file(final_path:absolute(), render_front_matter(opts.draft ~= false))
+    write_to_file(final_path:absolute(), render_front_matter(used_opts.draft))
 
-    if opts.open ~= false then
+    if used_opts.open then
         vim.cmd('e ' .. final_path:absolute())
         put_cursor_at_title()
     end
