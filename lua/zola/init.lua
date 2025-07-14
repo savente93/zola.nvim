@@ -7,31 +7,6 @@ local INFO = vim.log.levels.INFO
 ---@class zola_plugin
 local M = {}
 
-local function setup_zola_syntax()
-    -- shoutout to Yurii Kulchevich (@yorik1984) for this one
-  vim.api.nvim_exec2([[
-    " Reset current syntax to avoid duplicate regions
-    unlet b:current_syntax
-
-    " Include TOML syntax for front matter
-    syntax include @TOML syntax/toml.vim
-    syntax region tomlFrontMatter matchgroup=frontMatter start="\%^[ \t\n\r]*\_^[ \t]*+++[ \t]*$" end="^[ \t]*+++[ \t]*$" contains=@TOML keepend
-    hi link frontMatter Delimiter
-    syntax cluster mkdNonListItem add=tomlFrontMatter
-
-    " Reset again before Jinja
-    unlet b:current_syntax
-
-    " Include Jinja syntax for templates
-    syntax include @Jinja syntax/jinja.vim
-    syntax region zolaObject start="{{" end="}}" contains=@Jinja keepend
-    syntax region zolaTag start="{%" end="%}" contains=@Jinja keepend
-
-    syntax cluster mkdNonListItem add=zolaObject
-    syntax cluster mkdNonListItem add=zolaTag
-  ]], {})
-end
-
 --- Merge two tables with `t1` taking precedence over `t2`.
 ---@param t1 table
 ---@param t2 table
@@ -346,7 +321,7 @@ function M.create_page(opts)
     local page_path = Path:new(content_folder):joinpath(used_opts.slug)
     local final_path = page_path
 
-    if used_opts.page_is_dir false then
+    if used_opts.page_is_dir then
         if page_path:exists() and not used_opts.force then
             return vim.notify('Page directory already exists!', ERROR)
         elseif page_path:exists() then
@@ -369,5 +344,4 @@ function M.create_page(opts)
         put_cursor_at_title()
     end
 end
-
 return M
