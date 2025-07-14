@@ -60,6 +60,19 @@ M.config = {
         fast = false,
     },
     check = { drafts = false, skip_external_links = false },
+    page_defaults = {
+        page_is_dir = true, -- pages are located at `page-slug/index.md` instead of `page-slug.md`
+        root = nil,
+        force = false, -- overwrite a file if it already exists
+        draft = false, -- mark new page as draft
+        open = true, -- open the file after it has been created
+    },
+    section_defaults = {
+        root = nil,
+        force = false,
+        draft = false,
+        open = false,
+    },
 }
 
 --- Setup user configuration, merging with defaults.

@@ -74,26 +74,44 @@ All these configuration options will be used by the functions, and can be overri
 
 All functions accept a `root` parameter for if you want to perform that action for a site somewhere else, for example because you have a site for documentation located at `docs/site`. If neither the function call nor the config provide it this will default to `vim.fn.getcwd()`.
 
-
 ```lua
 local zola = require("zola")
 
-vim.keymap.set("n", "<leader>zsp", function() 
-    require("zola").serve{ root = "docs/site" },
+vim.keymap.set("n", "<leader>zbp", function() 
+    require("zola").build{ root = "docs/site", output_dir = "docs/build" }
 end, {desc = "Serve release version of site"})
 
+vim.keymap.set("n", "<leader>zc", function() 
+    require("zola").check()
+end, {desc = "Check the site"})
+
 vim.keymap.set("n", "<leader>zsd", function() 
-    require("zola").serve{ root = "docs/site", drafts = true },
+    require("zola").serve{  drafts = true }
+end, {desc = "Serve the site with drafts"})
+
+```
+
+You can also create a more flexible experience by intergrating with `vim.ui.input()` like so: 
+
+```lua
+
+vim.keymap.set("n", "<leader>zns", function()
+    vim.ui.input({prompt = "Enter section slug: "}, function(result)
+        require("zola").create_section({ slug = "blog/" .. result, page_is_dir = true, draft = true, open = true})
+    end)
 end, {desc = "Build release version of site"})
+
+vim.keymap.set("n", "<leader>znp", function()
+    vim.ui.input({prompt = "Enter page slug: "}, function(result)
+        require("zola").create_page({ slug = "blog/" .. result, page_is_dir = true, draft = true, open = true}),
+    end)
+end, {desc = "Create a new blog post"})
 
 vim.keymap.set("n", "<leader>zns", function() 
-    require("zola").build("docs/site"),
-end, {desc = "Build release version of site"})
-
-
-vim.keymap.set("n", "<leader>zb", function() 
-    require("zola").build("docs/site", "docs/build" ),
-end, {desc = "Build release version of site"})
+    vim.ui.input({prompt = "Enter section slug: "}, function(result) 
+        require("zola").create_section({ slug = "blog/" .. result, draft = true, open = true})
+    end)
+end, {desc = "Create a new blog section"})
 
 ```
 
@@ -102,58 +120,17 @@ end, {desc = "Build release version of site"})
 `Zola.nvim` is not a very heavy plugin, so lazy loading isn't implemented at this time. However, you can only configure keybindings for the user commands when opening neovim in the root of a zola site like this: 
 
 ```lua
-
-function config() 
-    if zola.is_zola_site() then
-        vim.keymap.set('n', '<leader>zb', function()
-            zola.build()
-        end, { desc = 'Build the Zola site' })
-
-        vim.keymap.set('n', '<leader>zs', function()
-            zola.serve()
-        end, { desc = 'Serve the Zola site' })
-
-        vim.keymap.set('n', '<leader>zns', function()
-            zola.create_section()
-        end, { desc = 'Create new content section' })
-
-        vim.keymap.set('n', '<leader>znp', function()
-            zola.create_page()
-        end, { desc = 'create new content page' })
-
-        vim.keymap.set('n', '<leader>zc', function()
-            zola.check()
-        end, { desc = 'Check zola site without rendering' })
+{
+    'savente93/zola.nvim',
+    dependencies = { 'nvim-lua/plenary.nvim' },
+    config = function()
+        if zola.is_zola_site() then
+            -- put your keybind mappings here
+        end
     end
-
-
-end
+}
 
 ```
-
-## 🗂 Example usage
-
-### Using Lua
-
-```lua
--- Build site
-require("zola").build()
-
--- Check site
-require("zola").check()
-
--- Serve site locally in a vertical split with logs
-require("zola").serve()
-
--- Create a new section called "blog"
-require("zola").create_section({ path = "blog" })
-
--- Create a new page called "about.md"
-require("zola").create_page({ path = "about.md" })
-
-```
-
-### Using user commands
 
 ## 🚧 Roadmap
 
