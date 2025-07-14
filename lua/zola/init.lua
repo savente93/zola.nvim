@@ -64,7 +64,7 @@ end
 --- Determine if a folder is a Zola site.
 ---@param root string|nil
 ---@return boolean
-function M._is_zola_site(root)
+function M.is_zola_site(root)
     return M._discover_config_file(root) ~= nil and M._discover_content_folder(root) ~= nil
 end
 
