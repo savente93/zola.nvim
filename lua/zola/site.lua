@@ -1,7 +1,7 @@
 local M = {}
 --- Discover Zola config.toml in project root.
----@param root string|nil
----@return Path|nil
+---@param root string|nil, the path to search. cwd will be used if nil
+---@return Path|nil the path of the config.toml if found, nil otherwise
 function M._discover_config_file(root)
     local utils = require 'zola.utils'
     local Path = require 'plenary.path'
@@ -11,8 +11,8 @@ function M._discover_config_file(root)
 end
 
 --- Discover Zola content folder in project root.
----@param root string|nil
----@return Path|nil
+---@param root string|nil, the path to search. cwd will be used if nil
+---@return Path|nil the path of the content folder if found, nil otherwise
 function M._discover_content_folder(root)
     local utils = require 'zola.utils'
     local Path = require 'plenary.path'

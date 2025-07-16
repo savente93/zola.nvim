@@ -1,8 +1,8 @@
 local M = {}
 
 --- Render default TOML front matter for new content.
----@param draft boolean|nil
----@return string
+---@param draft boolean|nil should the content be maked as drafed
+---@return string a string containing the front matter incl seperators to include in zola content files
 function M._render_front_matter(draft)
     local date = os.date '%Y-%m-%d'
     local lines = {
@@ -17,6 +17,9 @@ function M._render_front_matter(draft)
     return table.concat(lines, '\n')
 end
 
+--- Determine the coordinates to put the cursor at so the user can fill otu the title in the front matter
+---@param lines string[] the text of the buffer, typically includes onlyt the front matter
+---@return integer|nil, integer|nil
 function M._calculate_cursor_pos(lines)
     for i, line in ipairs(lines) do
         local target_col = line:find 'title%s*=%s*""'
@@ -31,7 +34,8 @@ function M._calculate_cursor_pos(lines)
     return nil, nil
 end
 
---- Put cursor inside empty title quotes in front matter.
+--- Put cursor inside empty title quotes in front matter of current buffer.
+---@return boolean whether operation was successful
 function M._put_cursor_at_title()
     local buf = vim.api.nvim_get_current_buf()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
