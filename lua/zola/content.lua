@@ -5,14 +5,16 @@ local M = {}
 ---@return string
 function M._render_front_matter(draft)
     local date = os.date '%Y-%m-%d'
-    return table.concat({
+    local lines = {
         '+++',
         'title = ""',
         'date = ' .. date,
-        draft and 'draft = true' or nil,
-        '+++',
-        '',
-    }, '\n')
+    }
+    if draft then
+        table.insert(lines, 'draft = true')
+    end
+    vim.list_extend(lines, { '+++', '' })
+    return table.concat(lines, '\n')
 end
 
 function M._calculate_cursor_pos(lines)

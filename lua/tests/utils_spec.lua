@@ -1,5 +1,3 @@
--- spec/util_spec.lua
-
 local util = require 'zola.utils'
 
 describe('zola.utils', function()

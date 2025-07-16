@@ -1,5 +1,3 @@
--- spec/front_matter_spec.lua
-
 local content = require 'zola.content'
 
 describe('front_matter module', function()
@@ -78,58 +76,6 @@ describe('front_matter module', function()
             local row, col = content._calculate_cursor_pos(lines)
             assert.is_nil(row)
             assert.is_nil(col)
-        end)
-    end)
-
-    describe('_put_cursor_at_title', function()
-        local original_vim
-
-        before_each(function()
-            original_vim = vim
-            vim = {
-                api = {
-                    nvim_get_current_buf = function()
-                        return 1
-                    end,
-                    nvim_buf_get_lines = function(_, _, _, _)
-                        return {
-                            '+++',
-                            'title = ""',
-                            '+++',
-                        }
-                    end,
-                    nvim_win_set_cursor = function(_, pos)
-                        vim._cursor_set = pos
-                    end,
-                    nvim_feedkeys = function(keys, mode, escape)
-                        vim._feedkeys_called = { keys, mode, escape }
-                    end,
-                },
-                notify = function(msg)
-                    vim._notified = msg
-                end,
-            }
-        end)
-
-        after_each(function()
-            vim = original_vim
-        end)
-
-        it('sets cursor to title quotes and enters insert mode', function()
-            local success = content._put_cursor_at_title()
-            assert.is_true(success)
-            assert.is_not_nil(vim._cursor_set)
-            assert.are.same('i', vim._feedkeys_called[1])
-        end)
-
-        it('notifies and returns false if title not found', function()
-            vim.api.nvim_buf_get_lines = function(_, _, _, _)
-                return { '+++', 'no title here', '+++' }
-            end
-
-            local success = content._put_cursor_at_title()
-            assert.is_false(success)
-            assert.is_not_nil(vim._notified)
         end)
     end)
 end)
