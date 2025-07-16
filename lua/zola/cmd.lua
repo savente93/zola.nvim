@@ -2,7 +2,7 @@ local M = {}
 
 function M._compute_check_args(args, check_config, common_config)
     local cmd = { 'zola' }
-    local used_opts = require('utils')._merge_tables(args, check_config, common_config)
+    local used_opts = require('zola.utils')._merge_tables(args, check_config, common_config)
 
     if used_opts.root then
         vim.list_extend(cmd, { '--root', used_opts.root })
@@ -21,7 +21,7 @@ end
 
 function M._compute_serve_args(args, serve_config, common_config)
     local cmd = { 'zola' }
-    local used_opts = require('utils')._merge_tables(args, serve_config, common_config)
+    local used_opts = require('zola.utils')._merge_tables(args, serve_config, common_config)
 
     if used_opts.root then
         vim.list_extend(cmd, { '--root', used_opts.root })
@@ -53,7 +53,7 @@ end
 ---@return {}
 function M._compute_build_args(args, build_config, common_config)
     local cmd = { 'zola' }
-    local used_opts = require('utils')._merge_tables(args, build_config, common_config)
+    local used_opts = require('zola.utils')._merge_tables(args, build_config, common_config)
 
     if used_opts.root then
         vim.list_extend(cmd, { '--root', used_opts.root })

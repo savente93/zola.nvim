@@ -30,7 +30,7 @@ function M._calculate_cursor_pos(lines)
 end
 
 --- Put cursor inside empty title quotes in front matter.
-function M.put_cursor_at_title()
+function M._put_cursor_at_title()
     local buf = vim.api.nvim_get_current_buf()
     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
     local row, col = M._calculate_cursor_pos(lines)
