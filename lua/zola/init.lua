@@ -92,7 +92,7 @@ function M.check(opts)
 end
 
 --- Serve the Zola site locally with live reload.
----@param opts {root?: string, output_dir?: string, force?: boolean, drafts?: boolean, open?: boolean,  fast?: boolean }
+---@param opts {slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?:boolean, date?: boolean}
 function M.serve(opts)
     local cmd = require('zola.cmd')._compute_serve_args(opts, M.config.common, M.config.serve)
     local serve_buf_nr = vim.api.nvim_create_buf(false, true)
@@ -112,7 +112,7 @@ function M.serve(opts)
 end
 
 --- Create a new section with _index.md in the content folder.
----@param opts { slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean }
+---@param opts {slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, date?: boolean}
 function M.create_section(opts)
     vim.validate { path = { opts.slug, 'string' } }
     local Path = require 'plenary.path'
