@@ -1,0 +1,20 @@
+local M = {}
+--- Discover Zola config.toml in project root.
+---@param root string|nil
+---@return Path|nil
+function M._discover_config_file(root)
+    local project_root = strip_trailing_slash(root or vim.fn.getcwd())
+    local config_path = Path:new(project_root):joinpath 'config.toml'
+    return config_path:exists() and config_path or nil
+end
+
+--- Discover Zola content folder in project root.
+---@param root string|nil
+---@return Path|nil
+function M._discover_content_folder(root)
+    local project_root = strip_trailing_slash(root or vim.fn.getcwd())
+    local content_path = Path:new(project_root):joinpath 'content'
+    return content_path:exists() and content_path or nil
+end
+
+return M
