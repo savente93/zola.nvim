@@ -25,10 +25,10 @@ function M._compute_check_args(args, check_config, common_config)
 end
 
 --- Determine the correct commandine arguments taking precidence into account for `zola serve`
----@param args {root?: string, force?: boolean, open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } any arguments provided to the function call
----@param serve_config  { force?: boolean, open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } arguments provided in check user config
+---@param args {root?: string,  open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } any arguments provided to the function call
+---@param serve_config  {  open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } arguments provided in check user config
 ---@param common_config  {root?: string} arguments proivded in common user config
----@return {root?: string, force?: boolean, open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } -- the actual flags and arguments that shold be used
+---@return {root?: string,  open?: boolean, fast?: boolean, drafts?: boolean, output_dir?: string, } -- the actual flags and arguments that shold be used
 function M._compute_serve_args(args, serve_config, common_config)
     local cmd = { 'zola' }
     local used_opts = require('zola.utils')._merge_tables(args, serve_config, common_config)
@@ -38,10 +38,6 @@ function M._compute_serve_args(args, serve_config, common_config)
     end
 
     table.insert(cmd, 'serve')
-
-    if used_opts.force then
-        table.insert(cmd, '--force')
-    end
 
     if used_opts.open then
         table.insert(cmd, '--open')

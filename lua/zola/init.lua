@@ -3,25 +3,31 @@ local M = {}
 
 --- Plugin configuration defaults.
 M.config = {
-    common = { root = nil },
-    build = { force = false, minify = true, drafts = false },
-    serve = {
-        force = false,
-        drafts = false,
-        open = true,
-        fast = false,
+    common = { root = nil }, -- the root of the site to be applied to all function calls
+    build = { -- any config to be used when calling `zola build`
+        force = false, -- overwrite files already present at output_dir
+        minify = true, -- minify output pages
+        drafts = false, -- include drafts in the output
     },
-    check = { drafts = false, skip_external_links = false },
-    page_defaults = {
-        page_is_dir = true,
-        force = false,
-        draft = false,
-        open = true,
+    serve = { -- options to be used with `zola serve`
+        drafts = false, -- include draft pages and sections in preview
+        open = true, -- open the preview in default browser
+        fast = false, -- only rebuild pages necessary instead of whole site
     },
-    section_defaults = {
-        force = false,
-        draft = false,
-        open = false,
+    check = { -- options to be used in `zola check`
+        drafts = false, -- also check any pages and sections maked as drafrs
+        skip_external_links = false, -- don't check whether external links are broken
+    },
+    page_defaults = { -- any options used when creating new pages (zola.nvim only)
+        page_is_dir = true, -- pages are located at page-slug/index.md instead of page-slug.md
+        force = false, -- continue and oferwrite files it already exists at provided path
+        draft = false, -- mark created page as draft
+        open = true, -- open the new page file in a new neovim buffer
+    },
+    section_defaults = { -- any options used when creating new sections (zola.nvim only)
+        force = false, -- continue and overwrite if specified path already exists
+        draft = false, -- mark created section as draft
+        open = false, -- open the _index.md of new section in a new buffer
     },
 }
 
