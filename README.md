@@ -110,29 +110,3 @@ end, {desc = "Create a new blog section"})
 
 ```
 
-### Configuring keybinding only in zola projects
-
-`Zola.nvim` is not a very heavy plugin, so lazy loading isn't implemented at this time. However, you can only configure keybindings for the user commands when opening neovim in the root of a zola site like this: 
-
-```lua
-{
-    'savente93/zola.nvim',
-    dependencies = { 'nvim-lua/plenary.nvim' },
-    config = function()
-        if zola.is_zola_site() then
-            -- put your keybind mappings here
-        end
-    end
-}
-
-```
-
-## 🚧 Roadmap
-
-Zola.nvim is a work in progress and it's use will be developed over time. It is currently in an early and thus quite maleable state. As such for now it will mostly be focused on my needs.
-However I'm open to implementing features based on requests. Some ideas I
-would consider implementing upon request:
-
-1. A Telescope picker/browser for themes
-2. Completion for taxonomies and taxonomy items
-3. Completion for internal linking
