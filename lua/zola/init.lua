@@ -46,7 +46,7 @@ function M.is_zola_site(root)
 end
 
 --- Build the Zola site.
----@param opts { root?: string, force?: boolean, draft?: boolean, open?: boolean, output_dir?: string}
+---@param opts { root?: string, force?: boolean, draft?: boolean, ouput_dir?: string}
 function M.build(opts)
     local cmd = require('zola.cmd')._compute_build_args(opts, M.config.build, M.config.common)
 
@@ -98,7 +98,7 @@ function M.check(opts)
 end
 
 --- Serve the Zola site locally with live reload.
----@param opts {slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?:boolean, date?: boolean}
+---@param opts {slug: string, root?: string, force?: boolean, draft?: boolean, open?: boolean, page_is_dir?:boolean}
 function M.serve(opts)
     local cmd = require('zola.cmd')._compute_serve_args(opts, M.config.common, M.config.serve)
     local serve_buf_nr = vim.api.nvim_create_buf(false, true)
