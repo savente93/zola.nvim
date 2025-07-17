@@ -50,7 +50,7 @@ end
 function M.build(opts)
     local cmd = require('zola.cmd')._compute_build_args(opts, M.config.build, M.config.common)
 
-    require('zola.utils').run_job(cmd, {
+    require('zola.utils')._run_job(cmd, {
         stdout_buffered = true,
         stderr_buffered = true,
 
@@ -75,7 +75,7 @@ end
 ---@param opts {root?: string, drafts?: boolean, skip_external_links?: boolean}
 function M.check(opts)
     local cmd = require('zola.cmd')._compute_check_args(opts, M.config.check, M.config.common)
-    require('zola.utils').run_job(cmd, {
+    require('zola.utils')._run_job(cmd, {
         stdout_buffered = true,
         stderr_buffered = true,
 
@@ -110,7 +110,7 @@ function M.serve(opts)
     vim.api.nvim_win_set_buf(0, serve_buf_nr)
 
     -- Start terminal job directly
-    require('zola.utils').run_job(cmd, {
+    require('zola.utils')._run_job(cmd, {
         stdout_buffered = false,
         stderr_buffered = false,
         term = true,
@@ -123,7 +123,7 @@ function M.create_section(opts)
     vim.validate { path = { opts.slug, 'string' } }
     local Path = require 'plenary.path'
 
-    local used_opts = require('zola.utils').merge_tables(opts, M.config.section_defaults)
+    local used_opts = require('zola.utils')._merge_tables(opts, M.config.section_defaults)
 
     local content_folder = require('zola.site')._discover_content_folder(used_opts.root)
     if not content_folder then
@@ -141,11 +141,11 @@ function M.create_section(opts)
     vim.uv.fs_mkdir(section_path:absolute(), 493) -- permission 0755
 
     local final_path = section_path:joinpath '_index.md'
-    require('zola.utils').write_to_file(final_path:absolute(), require('zola.content').render_front_matter(used_opts.draft))
+    require('zola.utils')._write_to_file(final_path:absolute(), require('zola.content')._render_front_matter(used_opts.draft))
 
     if used_opts.open then
         vim.cmd('e ' .. final_path:absolute())
-        require('zola.content').put_cursor_at_title()
+        require('zola.content')._put_cursor_at_title()
     end
 end
 
@@ -181,11 +181,11 @@ function M.create_page(opts)
         end
     end
 
-    require('zola.utils').write_to_file(final_path:absolute(), require('zola.content').render_front_matter(used_opts.draft))
+    require('zola.utils')._write_to_file(final_path:absolute(), require('zola.content')._render_front_matter(used_opts.draft))
 
     if used_opts.open then
         vim.cmd('e ' .. final_path:absolute())
-        require('zola.content').put_cursor_at_title()
+        require('zola.content')._put_cursor_at_title()
     end
 end
 return M
