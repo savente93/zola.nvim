@@ -1,10 +1,20 @@
 vim.api.nvim_create_user_command('ZolaBuild', function(opts)
     local build_opts = {}
-
-    -- opts.args is a string of all arguments
-    -- Split it and add as keys with true value
     for word in opts.args:gmatch '%S+' do
-        build_opts[word] = true
+        local key, value = word:match '([^=]+)=([^=]+)'
+        if key and value then
+            -- Convert string "false"/"true" to boolean
+            if value == 'false' then
+                build_opts[key] = false
+            elseif value == 'true' then
+                build_opts[key] = true
+            else
+                build_opts[key] = value -- store raw string if not true/false
+            end
+        else
+            -- No '=', treat as flag set to true
+            build_opts[word] = true
+        end
     end
     require('zola').build(build_opts)
 end, {
@@ -17,9 +27,21 @@ end, {
 
 vim.api.nvim_create_user_command('ZolaServe', function(opts)
     local serve_opts = {}
-
     for word in opts.args:gmatch '%S+' do
-        serve_opts[word] = true
+        local key, value = word:match '([^=]+)=([^=]+)'
+        if key and value then
+            -- Convert string "false"/"true" to boolean
+            if value == 'false' then
+                serve_opts[key] = false
+            elseif value == 'true' then
+                serve_opts[key] = true
+            else
+                serve_opts[key] = value -- store raw string if not true/false
+            end
+        else
+            -- No '=', treat as flag set to true
+            serve_opts[word] = true
+        end
     end
     require('zola').serve(serve_opts)
 end, {
@@ -32,9 +54,21 @@ end, {
 
 vim.api.nvim_create_user_command('ZolaCheck', function(opts)
     local check_opts = {}
-
     for word in opts.args:gmatch '%S+' do
-        check_opts[word] = true
+        local key, value = word:match '([^=]+)=([^=]+)'
+        if key and value then
+            -- Convert string "false"/"true" to boolean
+            if value == 'false' then
+                check_opts[key] = false
+            elseif value == 'true' then
+                check_opts[key] = true
+            else
+                check_opts[key] = value -- store raw string if not true/false
+            end
+        else
+            -- No '=', treat as flag set to true
+            check_opts[word] = true
+        end
     end
     require('zola').check(check_opts)
 end, {
@@ -53,10 +87,21 @@ vim.api.nvim_create_user_command('ZolaCreatePage', function(opts)
         end
 
         local page_opts = {}
-        page_opts.slug = result
-
         for word in opts.args:gmatch '%S+' do
-            page_opts[word] = true
+            local key, value = word:match '([^=]+)=([^=]+)'
+            if key and value then
+                -- Convert string "false"/"true" to boolean
+                if value == 'false' then
+                    page_opts[key] = false
+                elseif value == 'true' then
+                    page_opts[key] = true
+                else
+                    page_opts[key] = value -- store raw string if not true/false
+                end
+            else
+                -- No '=', treat as flag set to true
+                page_opts[word] = true
+            end
         end
 
         require('zola').create_page(page_opts)
@@ -77,10 +122,21 @@ vim.api.nvim_create_user_command('ZolaCreateSection', function(opts)
         end
 
         local section_opts = {}
-        section_opts.slug = result
-
         for word in opts.args:gmatch '%S+' do
-            section_opts[word] = true
+            local key, value = word:match '([^=]+)=([^=]+)'
+            if key and value then
+                -- Convert string "false"/"true" to boolean
+                if value == 'false' then
+                    section_opts[key] = false
+                elseif value == 'true' then
+                    section_opts[key] = true
+                else
+                    section_opts[key] = value -- store raw string if not true/false
+                end
+            else
+                -- No '=', treat as flag set to true
+                section_opts[word] = true
+            end
         end
 
         require('zola').create_section(section_opts)
