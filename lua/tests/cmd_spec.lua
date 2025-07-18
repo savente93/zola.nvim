@@ -99,9 +99,9 @@ describe('_compute_build_args', function()
         assert.are.same({ 'zola', 'build', '--drafts' }, cmd)
     end)
 
-    it('includes --output_dir when set', function()
+    it('includes --output-dir when set', function()
         local cmd = M._compute_build_args({ output_dir = 'dist' }, {}, {})
-        assert.are.same({ 'zola', 'build', '--output_dir', 'dist' }, cmd)
+        assert.are.same({ 'zola', 'build', '--output-dir', 'dist' }, cmd)
     end)
 
     it('includes all options when all are set from different configs', function()
@@ -114,7 +114,7 @@ describe('_compute_build_args', function()
             '--force',
             '--minify',
             '--drafts',
-            '--output_dir',
+            '--output-dir',
             'out',
         }, cmd)
     end)
@@ -133,7 +133,7 @@ describe('_compute_build_args', function()
             '--force',
             '--minify',
             '--drafts',
-            '--output_dir',
+            '--output-dir',
             'args_out',
         }, cmd)
     end)
@@ -180,9 +180,9 @@ describe('_compute_serve_args', function()
         assert.are.same({ 'zola', 'serve', '--drafts' }, cmd)
     end)
 
-    it('includes --output_dir when set', function()
+    it('includes --output-dir when set', function()
         local cmd = M._compute_serve_args({ output_dir = 'public' }, {}, {})
-        assert.are.same({ 'zola', 'serve', '--output_dir', 'public' }, cmd)
+        assert.are.same({ 'zola', 'serve', '--output-dir', 'public' }, cmd)
     end)
 
     it('includes all options when all are set from different configs', function()
@@ -200,7 +200,7 @@ describe('_compute_serve_args', function()
             '--open',
             '--fast',
             '--drafts',
-            '--output_dir',
+            '--output-dir',
             'out',
         }, cmd)
     end)
@@ -220,7 +220,7 @@ describe('_compute_serve_args', function()
             '--open',
             '--fast',
             '--drafts',
-            '--output_dir',
+            '--output-dir',
             'args_out',
         }, cmd)
     end)

@@ -49,7 +49,7 @@ function M._compute_serve_args(args, serve_config, common_config)
         table.insert(cmd, '--drafts')
     end
     if used_opts.output_dir then
-        vim.list_extend(cmd, { '--output_dir', used_opts.output_dir })
+        vim.list_extend(cmd, { '--output-dir', used_opts.output_dir })
     end
     return cmd
 end
@@ -80,7 +80,7 @@ function M._compute_build_args(args, build_config, common_config)
         table.insert(cmd, '--drafts')
     end
     if used_opts.output_dir then
-        vim.list_extend(cmd, { '--output_dir', used_opts.output_dir })
+        vim.list_extend(cmd, { '--output-dir', used_opts.output_dir })
     end
 
     return cmd
